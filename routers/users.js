@@ -33,7 +33,7 @@ router.post('/login',async(req,res) => {
         res.status(200).send({user:user.email,token: token})
     }
     else
-        res.status(200).send('password is wong')
+        res.status(200).send('pasgit push -u origin mainsword is wong')
 })
 
 router.get('/:id',async(req,res) =>{
