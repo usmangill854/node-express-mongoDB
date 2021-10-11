@@ -13,6 +13,7 @@ function authJwt(){
             {url: /\/api\/v1\/categories(.*)/,method : ['GET' , 'OPTIONS']},
              `${api}/users/register` ,
             `${api}/users/login`,
+            //check git updates
 
         ]
     })
