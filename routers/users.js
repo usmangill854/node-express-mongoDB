@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const {sign} = require("jsonwebtoken");
 const {isRequired} = require("nodemon/lib/utils");
+const Products = require("../models/product");
 
 router.get('/',async(req,res) => {
     const  user = await User.find().select('-passwordHash')
@@ -25,15 +26,15 @@ router.post('/login',async(req,res) => {
             {
                 userId:user.id,
                 isAdmin: user.isAdmin,
-                isRevoked: isRevoked
             },
-            secret,
-            { }
+            secret, {expiresIn: "1y" }
         )
+        const refreshToken = jwt.sign
+
         res.status(200).send({user:user.email,token: token})
     }
     else
-        res.status(200).send('pasgit push -u origin mainsword is wong')
+        res.status(200).send('password is wong')
 })
 
 router.get('/:id',async(req,res) =>{
@@ -44,6 +45,16 @@ router.get('/:id',async(req,res) =>{
     }
     else res.send(user)
 })
+
+router.get('/get/count',async (req,res) =>{
+    const userCount =await User.countDocuments()
+    if(!userCount ) {
+        res.status(500).json({success: false})
+    }
+    else res.send({productCount:userCount})
+})
+
+
 
 router.post('/',async (req,res) => {
     let user = new User({

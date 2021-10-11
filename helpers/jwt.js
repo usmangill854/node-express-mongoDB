@@ -1,11 +1,12 @@
 const expressJwt = require('express-jwt')
-
+//52 se start kro
 function authJwt(){
     const secret = process.env.secret
     const api =process.env.API_URL
     return expressJwt({
         secret,
-        algorithms:['HS256']
+        algorithms:['HS256'],
+        isRevoked: isRevoked
     }).unless({
         path:[
             {url: /\/api\/v1\/products(.*)/,method : ['GET' , 'OPTIONS']},
@@ -15,6 +16,12 @@ function authJwt(){
 
         ]
     })
+}
+async function isRevoked(req,payload,done){
+    if(!payload.isAdmin){
+        done(null,true)
+    }
+    done()
 }
 
 module.exports = authJwt
