@@ -3,10 +3,18 @@ const mongoose = require("mongoose");
 const Products = require("../models/product");
 const {Category} = require("../models/category");
 const router = express.Router()
+const multer = require('multer')
 
-
-
-
+const storage = multer.diskStorage({
+    destination:function (req,file,cd){
+        cb(null,'/public/uploads')
+    },
+    filename:function (req,file,cb){
+        const fileName= file.originalname.split(' ').join('_');
+        cb(null,`${fileName}-${Date.now()}.${extension}`)
+    }
+})
+const uploadOptions = multer({storage:storage})
 
 
 router.get(`/`,async (req,res) =>{
@@ -26,7 +34,10 @@ router.get(`/`,async (req,res) =>{
     res.send(productList)
     console.log(productList)
 })
-router.put('/:id',async(req,res) =>{
+router.put('/:id',uploadOptions.single('image'),async(req,res) =>{
+
+    const fileName = req.file.filename
+    const basePath =`${req.protocol}://${req.get('host')}/public/upload/`
     if(!mongoose.isValidObjectId(req.params.id)){
         res.status(400).json({message: 'Invalid Id'})
     }
@@ -37,7 +48,7 @@ router.put('/:id',async(req,res) =>{
             name: req.body.name,
             description: req.body.description,
             richDescription: req.body.richDescription,
-            image: req.body.image,
+            image: `${basePath}${fileName}`,
             brand: req.body.brand,
             price: req.body.price,
             category: req.body.category,
