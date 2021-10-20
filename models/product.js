@@ -16,7 +16,8 @@ const  productSchema = mongoose.Schema({
         type : String
     }],
     brand : {
-        type: String
+        type: String,
+        default: ''
     },
 
     price : {

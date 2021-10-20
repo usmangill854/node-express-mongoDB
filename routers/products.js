@@ -5,12 +5,27 @@ const {Category} = require("../models/category");
 const router = express.Router()
 const multer = require('multer')
 
+const FILE_TYPE_MAP = {
+    'image/PNG' : 'PNG',
+    'image/jpeg' : 'jpeg',
+    'image/jpg' : 'jpg'
+}
+
 const storage = multer.diskStorage({
-    destination:function (req,file,cd){
-        cb(null,'/public/uploads')
+    destination:function (req,file,cb){
+        const isValid = FILE_TYPE_MAP[file.mimeType]
+        let uploadError = new Error('invalid image type')
+
+        if(isValid){
+            uploadError = null
+        }
+
+        cb(uploadError,'/public/uploads')
     },
     filename:function (req,file,cb){
-        const fileName= file.originalname.split(' ').join('_');
+
+        const fileName= file.originalname.split(' ').join('-');
+        const extension = FILE_TYPE_MAP[file.mimeType]
         cb(null,`${fileName}-${Date.now()}.${extension}`)
     }
 })
@@ -34,21 +49,16 @@ router.get(`/`,async (req,res) =>{
     res.send(productList)
     console.log(productList)
 })
-router.put('/:id',uploadOptions.single('image'),async(req,res) =>{
+router.put('/:id',async(req,res) =>{
 
-    const fileName = req.file.filename
-    const basePath =`${req.protocol}://${req.get('host')}/public/upload/`
-    if(!mongoose.isValidObjectId(req.params.id)){
-        res.status(400).json({message: 'Invalid Id'})
-    }
-    const category = await Category.findById(req.body.category)
+       const category = await Category.findById(req.body.category)
     if(!category) return res.status(400).json({message: 'Invalid Category'})
 
     const product = await Products.findByIdAndUpdate(req.params.id,{
             name: req.body.name,
             description: req.body.description,
             richDescription: req.body.richDescription,
-            image: `${basePath}${fileName}`,
+            image: req.body.image ,
             brand: req.body.brand,
             price: req.body.price,
             category: req.body.category,
@@ -102,16 +112,20 @@ router.get('/get/featured/:count',async (req,res) =>{
 })
 
 
+router.post(`/`, uploadOptions.single('image'), async (req, res) => {
+    const category = await Category.findById(req.body.category);
+    if (!category) return res.status(400).send('Invalid Category');
 
+    const file = req.file;
+    if (!file) return res.status(400).send('No image in the request');
 
-router.post(`/`,async(req,res) => {
-    const category = await Category.findById(req.body.category)
-    if(!category) return res.status(400).send('invalid Category')
-    const product= new Products ({
+    const fileName = file.filename;
+    const basePath = `${req.protocol}://${req.get('host')}/public/uploads/`;
+    let product = new Product({
         name: req.body.name,
         description: req.body.description,
         richDescription: req.body.richDescription,
-        image: req.body.image,
+        image: `${basePath}${fileName}`, // "http://localhost:3000/public/upload/image-2323232"
         brand: req.body.brand,
         price: req.body.price,
         category: req.body.category,
@@ -119,15 +133,56 @@ router.post(`/`,async(req,res) => {
         rating: req.body.rating,
         numReviews: req.body.numReviews,
         isFeatured: req.body.isFeatured
-    })
-    const postProduct =await product.save()
-    console.log(postProduct)
-    if(!postProduct){
-        res.status(500).json({success: false,message:'product cannot created'})
-    }
-    else{
-        res.status(200).json(postProduct)
-    }
+    });
+
+    product = await product.save();
+
+    if (!product) return res.status(500).send('The product cannot be created');
+
+    res.send(product);
+});
+
+
+
+//
+// router.post(`/`,uploadOptions.single('image'),async(req,res) => {
+//     const category = await Category.findById(req.body.category)
+//     if (!category) return res.status(400).send('invalid Category')
+//
+//
+//     const file = req.file;
+//     if (!file) return res.status(400).send('No image in the request');
+//
+//
+//     const fileName = file.filename
+//     const basePath = `${req.protocol}://${req.get('host')}/public/upload/`
+//
+//     // if(!mongoose.isValidObjectId(req.params.id)){
+//     //     res.status(400).json({message: 'Invalid Id'})
+//     // }
+//
+//
+//     const product = new Products({
+//         name: req.body.name,
+//         description: req.body.description,
+//         richDescription: req.body.richDescription,
+//         image: `${basePath}${fileName}`,
+//         brand: req.body.brand,
+//         price: req.body.price,
+//         category: req.body.category,
+//         countInStock: req.body.countInStock,
+//         rating: req.body.rating,
+//         numReviews: req.body.numReviews,
+//         isFeatured: req.body.isFeatured
+//     })
+//     const postProduct = await product.save()
+//     console.log(postProduct)
+//     if (!postProduct) {
+//         res.status(500).json({success: false, message: 'product cannot created'})
+//     } else {
+//         res.status(200).json(postProduct)
+//     }
+// })
     // product.save().then((createdProduct => {
     //     res.status(201).json(createdProduct)
     // })).catch((err) => {
@@ -155,5 +210,4 @@ router.post(`/`,async(req,res) => {
     // console.log(newProduct)
     // res.send(product)
 
-})
 module.exports = router;
