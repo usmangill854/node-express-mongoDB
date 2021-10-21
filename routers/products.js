@@ -73,10 +73,26 @@ router.get(`/`,async (req,res) =>{
     res.send(productList)
     console.log(productList)
 })
-router.put('/:id',async(req,res) =>{
-
+router.put('/:id', async(req,res) =>{
+    // if(!mongoose.isValidObjectId(req.params.id)){
+    //     return res.status(400).send('invalid product id')
+    // }
        const category = await Category.findById(req.body.category)
     if(!category) return res.status(400).json({message: 'Invalid Category'})
+
+    const products = await Products.findById(req.params.id)
+    if(!products) return res.status(400).send('invalid Product')
+
+    // const file= req.file
+    // let imagePath;
+    // if(file){
+    //     const fileName = file.filename
+    //     const basePath = `${req.protocol}://${req.get('host')}/public/upload/`
+    //     imagePath = `${basePath}${fileName}`
+    // }else{
+    //     imagePath = products.image
+    // }
+
 
     const product = await Products.findByIdAndUpdate(req.params.id,{
             name: req.body.name,
@@ -233,5 +249,31 @@ router.post(`/`,uploadOptions.single('image'),async(req,res) => {
     // console.log(req.body.name)
     // console.log(newProduct)
     // res.send(product)
+
+    router.put('/gallery-images/:id',
+        uploadOptions.array('image',10)
+        ,async (req,res) =>{
+        if(!mongoose.isValidObjectId(req.params.id)){
+            return res.status(400).send('invalid product id')
+        }
+        const imagesPathes=[]
+            const files= req.files
+            const basePath = `${req.protocol}://${req.get('host')}/public/upload/`
+
+            if(files){
+                files.map(file =>{
+                    imagesPathes.push(`${basePath}${file.filename}`)
+                })
+            }
+            const product = await Products.findByIdAndUpdate(
+                req.params.id,{
+                images: imagesPathes
+            },{new:true}
+            )
+            if(!product){
+                return res.status(500).send('product cannot be updated')
+            }
+            res.send(product)
+    })
 
 module.exports = router;
